@@ -1,0 +1,689 @@
+{
+  "info": {
+    "name": "Beeliin Hosting API",
+    "description": "Laravel 12 backend for Beeliin Hosting — control layer between Nuxt 4 frontend and WHMCS.\n\nBase URL: {{base_url}}\nAuth: Bearer token via Sanctum (set {{token}} after login)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "beeliin-hosting-api-v1"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token",    "value": "",                          "type": "string" },
+    { "key": "cart_token", "value": "",                        "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\",\n  \"password\": \"Secret123!\",\n  \"password_confirmation\": \"Secret123!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] },
+            "description": "Create a new account. Returns user + Bearer token. Sets {{token}} automatically."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@beeliin.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] },
+            "description": "Login with email/password. Sets {{token}} automatically."
+          }
+        },
+        {
+          "name": "Me (current user)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] },
+            "description": "Returns authenticated user profile."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@example.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/profile", "host": ["{{base_url}}"], "path": ["auth", "profile"] }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Password123!\",\n  \"password\": \"NewSecret456!\",\n  \"password_confirmation\": \"NewSecret456!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/change-password", "host": ["{{base_url}}"], "path": ["auth", "change-password"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/forgot-password", "host": ["{{base_url}}"], "path": ["auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] },
+            "description": "Revokes the current token."
+          }
+        },
+        {
+          "name": "Logout All Devices",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/auth/logout-all", "host": ["{{base_url}}"], "path": ["auth", "logout-all"] },
+            "description": "Revokes all tokens for the authenticated user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products (Public)",
+      "item": [
+        {
+          "name": "List All Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/products?type=vps&page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "type",     "value": "vps",  "description": "Filter by type: vps, domain, ssl, other" },
+                { "key": "page",     "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            },
+            "description": "Public endpoint. No auth required."
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/products/1", "host": ["{{base_url}}"], "path": ["products", "1"] }
+          }
+        },
+        {
+          "name": "Featured Products",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/products/featured", "host": ["{{base_url}}"], "path": ["products", "featured"] }
+          }
+        },
+        {
+          "name": "Grouped Products",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/products/grouped", "host": ["{{base_url}}"], "path": ["products", "grouped"] },
+            "description": "Products grouped by type/category."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart (Guest + Auth)",
+      "description": "Cart uses X-Cart-Token header for guest sessions. On login, pass the same header to adopt the guest cart.",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}", "description": "Optional — omit for auth users" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "disabled": true }
+            ],
+            "url": { "raw": "{{base_url}}/cart", "host": ["{{base_url}}"], "path": ["cart"] }
+          }
+        },
+        {
+          "name": "Add Item to Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  var json = pm.response.json();",
+                  "  if (json.data && json.data.cart_token) {",
+                  "    pm.collectionVariables.set('cart_token', json.data.cart_token);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}", "description": "Leave empty on first request; auto-set from response" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": \"1\",\n  \"name\": \"VPS Starter\",\n  \"type\": \"vps\",\n  \"billing_cycle\": \"monthly\",\n  \"quantity\": 1,\n  \"unit_price\": 9.99\n}"
+            },
+            "url": { "raw": "{{base_url}}/cart/items", "host": ["{{base_url}}"], "path": ["cart", "items"] }
+          }
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            },
+            "url": { "raw": "{{base_url}}/cart/items/1", "host": ["{{base_url}}"], "path": ["cart", "items", "1"] }
+          }
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "disabled": true }
+            ],
+            "url": { "raw": "{{base_url}}/cart/items/1", "host": ["{{base_url}}"], "path": ["cart", "items", "1"] }
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "disabled": true }
+            ],
+            "url": { "raw": "{{base_url}}/cart", "host": ["{{base_url}}"], "path": ["cart"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Checkout (Create Order from Cart)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" },
+              { "key": "X-Cart-Token",  "value": "{{cart_token}}", "description": "Required if cart was created as guest" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_method\": \"credit_card\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/orders/checkout", "host": ["{{base_url}}"], "path": ["orders", "checkout"] },
+            "description": "Creates a WHMCS order from the current cart. Returns the new order."
+          }
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/orders", "host": ["{{base_url}}"], "path": ["orders"] }
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/orders/1001", "host": ["{{base_url}}"], "path": ["orders", "1001"] },
+            "description": "Returns 404 if order not owned by current user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "VPS",
+      "item": [
+        {
+          "name": "List VPS",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps", "host": ["{{base_url}}"], "path": ["vps"] }
+          }
+        },
+        {
+          "name": "Get VPS by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps/1", "host": ["{{base_url}}"], "path": ["vps", "1"] }
+          }
+        },
+        {
+          "name": "Create VPS (Provision)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"starter\",\n  \"region\": \"eu-central\",\n  \"os\": \"ubuntu-22.04\",\n  \"hostname\": \"my-vps.example.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/vps", "host": ["{{base_url}}"], "path": ["vps"] }
+          }
+        },
+        {
+          "name": "Start VPS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps/1/start", "host": ["{{base_url}}"], "path": ["vps", "1", "start"] }
+          }
+        },
+        {
+          "name": "Stop VPS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps/1/stop", "host": ["{{base_url}}"], "path": ["vps", "1", "stop"] }
+          }
+        },
+        {
+          "name": "Reboot VPS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps/1/reboot", "host": ["{{base_url}}"], "path": ["vps", "1", "reboot"] }
+          }
+        },
+        {
+          "name": "Destroy VPS",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/vps/1", "host": ["{{base_url}}"], "path": ["vps", "1"] },
+            "description": "Permanently destroys the VPS. This action is irreversible."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Domains",
+      "item": [
+        {
+          "name": "List Domains",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/domains", "host": ["{{base_url}}"], "path": ["domains"] }
+          }
+        },
+        {
+          "name": "Get Domain by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/domains/1", "host": ["{{base_url}}"], "path": ["domains", "1"] }
+          }
+        },
+        {
+          "name": "Toggle Auto-Renew",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"auto_renew\": true\n}"
+            },
+            "url": { "raw": "{{base_url}}/domains/1/auto-renew", "host": ["{{base_url}}"], "path": ["domains", "1", "auto-renew"] }
+          }
+        },
+        {
+          "name": "Renew Domain",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"years\": 1\n}"
+            },
+            "url": { "raw": "{{base_url}}/domains/1/renew", "host": ["{{base_url}}"], "path": ["domains", "1", "renew"] }
+          }
+        },
+        {
+          "name": "Lock Domain",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/domains/1/lock", "host": ["{{base_url}}"], "path": ["domains", "1", "lock"] }
+          }
+        },
+        {
+          "name": "Unlock Domain",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/domains/1/unlock", "host": ["{{base_url}}"], "path": ["domains", "1", "unlock"] }
+          }
+        },
+        {
+          "name": "Update Nameservers",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ns1\": \"ns1.example.com\",\n  \"ns2\": \"ns2.example.com\",\n  \"ns3\": \"\",\n  \"ns4\": \"\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/domains/1/nameservers", "host": ["{{base_url}}"], "path": ["domains", "1", "nameservers"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Billing & Invoices",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/billing/invoices?status=unpaid",
+              "host": ["{{base_url}}"],
+              "path": ["billing", "invoices"],
+              "query": [{ "key": "status", "value": "unpaid", "description": "unpaid | paid | cancelled | all" }]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/billing/invoices/1001", "host": ["{{base_url}}"], "path": ["billing", "invoices", "1001"] }
+          }
+        },
+        {
+          "name": "Pay Invoice (Get WHMCS Payment URL)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/billing/invoices/1001/pay", "host": ["{{base_url}}"], "path": ["billing", "invoices", "1001", "pay"] },
+            "description": "Returns a payment_url for the WHMCS-hosted payment page."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Support Tickets",
+      "item": [
+        {
+          "name": "List Tickets",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/tickets?status=open",
+              "host": ["{{base_url}}"],
+              "path": ["tickets"],
+              "query": [{ "key": "status", "value": "open", "description": "open | answered | closed | all" }]
+            }
+          }
+        },
+        {
+          "name": "Get Ticket by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/tickets/1001", "host": ["{{base_url}}"], "path": ["tickets", "1001"] }
+          }
+        },
+        {
+          "name": "Create Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"VPS not responding\",\n  \"department_id\": 4,\n  \"priority\": \"high\",\n  \"message\": \"My VPS at 192.168.1.1 has been unreachable for 30 minutes.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/tickets", "host": ["{{base_url}}"], "path": ["tickets"] },
+            "description": "Returns 201 with the created ticket."
+          }
+        },
+        {
+          "name": "Reply to Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Thank you for the update, still seeing the issue.\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/tickets/1001/reply", "host": ["{{base_url}}"], "path": ["tickets", "1001", "reply"] }
+          }
+        },
+        {
+          "name": "Close Ticket",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/tickets/1001/close", "host": ["{{base_url}}"], "path": ["tickets", "1001", "close"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments (Stripe)",
+      "description": "Stripe Checkout integration. Call /payments/checkout to get a Stripe hosted URL, then redirect the user. Stripe calls /payments/webhook/stripe on completion.",
+      "item": [
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_id\": 1001,\n  \"provider\": \"stripe\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/payments/checkout", "host": ["{{base_url}}"], "path": ["payments", "checkout"] },
+            "description": "Returns checkout_url (Stripe-hosted payment page). Caches session for 2 hours."
+          }
+        },
+        {
+          "name": "Payment Success (Return URL)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/payments/success?session_id=cs_test_xxx&provider=stripe",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "success"],
+              "query": [
+                { "key": "session_id", "value": "cs_test_xxx" },
+                { "key": "provider",   "value": "stripe" }
+              ]
+            },
+            "description": "Called by Stripe redirect after successful payment."
+          }
+        },
+        {
+          "name": "Payment Cancel (Return URL)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/payments/cancel?session_id=cs_test_xxx&provider=stripe",
+              "host": ["{{base_url}}"],
+              "path": ["payments", "cancel"],
+              "query": [
+                { "key": "session_id", "value": "cs_test_xxx" },
+                { "key": "provider",   "value": "stripe" }
+              ]
+            },
+            "description": "Called by Stripe redirect when user cancels."
+          }
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Stripe-Signature", "value": "t=1234567890,v1=abc123..." }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_test_xxx\",\n      \"payment_status\": \"paid\",\n      \"metadata\": { \"invoice_id\": \"1001\" }\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/payments/webhook/stripe", "host": ["{{base_url}}"], "path": ["payments", "webhook", "stripe"] },
+            "description": "Public endpoint (no auth). Stripe-Signature header verified via HMAC-SHA256. Returns 200 or 400 (Stripe retries on 4xx/5xx)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin-only endpoints. Requires a user with role=admin. All return 403 for non-admin authenticated users.",
+      "item": [
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/admin/dashboard", "host": ["{{base_url}}"], "path": ["admin", "dashboard"] },
+            "description": "Aggregated stats: users count (DB) + VPS/domains/tickets/invoices/revenue (WHMCS)."
+          }
+        },
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{base_url}}/admin/users?per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"],
+              "query": [{ "key": "per_page", "value": "20", "description": "Max 100" }]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/admin/users/1", "host": ["{{base_url}}"], "path": ["admin", "users", "1"] }
+          }
+        },
+        {
+          "name": "List All Orders (Cross-Client)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/admin/orders", "host": ["{{base_url}}"], "path": ["admin", "orders"] },
+            "description": "Returns orders for ALL clients via WHMCS GetOrders (no userid filter)."
+          }
+        },
+        {
+          "name": "Get Order by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{base_url}}/admin/orders/1001", "host": ["{{base_url}}"], "path": ["admin", "orders", "1001"] }
+          }
+        }
+      ]
+    }
+  ]
+}
