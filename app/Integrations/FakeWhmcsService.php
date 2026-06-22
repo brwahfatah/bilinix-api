@@ -2,6 +2,8 @@
 
 namespace App\Integrations;
 
+use Illuminate\Support\Facades\Cache;
+
 /**
  * Local-development stub for WhmcsService.
  *
@@ -207,7 +209,7 @@ class FakeWhmcsService extends WhmcsService
     {
         return [
             $this->invoiceListRecord(2001, 'Paid',   '2026-06-01'),
-            $this->invoiceListRecord(2002, 'Unpaid', '2026-08-01'),
+            $this->invoiceListRecord(2002, Cache::get('fake_whmcs_paid_2002', false) ? 'Paid' : 'Unpaid', '2026-08-01'),
             $this->invoiceListRecord(2003, 'Unpaid', '2025-01-01'), // past duedate → auto-promoted to overdue
         ];
     }
@@ -222,7 +224,10 @@ class FakeWhmcsService extends WhmcsService
         return 'https://whmcs.example.com/viewinvoice.php?id=' . $invoiceId . '&token=fake-sso-token';
     }
 
-    public function payInvoice(int $invoiceId, string $gateway, float $amount): void {}
+    public function payInvoice(int $invoiceId, string $gateway, float $amount): void
+    {
+        Cache::put("fake_whmcs_paid_{$invoiceId}", true, now()->addDays(7));
+    }
 
     public function getDashboardSummary(int $clientId): array
     {
@@ -382,7 +387,8 @@ class FakeWhmcsService extends WhmcsService
 
     private function invoiceDetailRecord(int $invoiceId): array
     {
-        $status  = $invoiceId === 2001 ? 'Paid' : 'Unpaid';
+        $isPaid  = $invoiceId === 2001 || Cache::get("fake_whmcs_paid_{$invoiceId}", false);
+        $status  = $isPaid ? 'Paid' : 'Unpaid';
         $duedate = $invoiceId === 2003 ? '2025-01-01' : ($invoiceId === 2001 ? '2026-06-01' : '2026-08-01');
         $datepaid = $status === 'Paid' ? '2026-06-15' : '0000-00-00';
 
