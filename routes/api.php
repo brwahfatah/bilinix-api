@@ -29,8 +29,8 @@ Route::get('/health', [HealthController::class, 'check']);
 // Must be registered BEFORE the auth:sanctum group so Stripe can POST without a token.
 // success/cancel are also public because Stripe redirects without a Bearer token.
 Route::post('/payments/webhook/stripe', [PaymentController::class, 'stripeWebhook']);
-Route::get('/payments/success',         [PaymentController::class, 'success']);
-Route::get('/payments/cancel',          [PaymentController::class, 'cancel']);
+Route::get('/payments/success',         [PaymentController::class, 'paymentSuccess']);
+Route::get('/payments/cancel',          [PaymentController::class, 'paymentCancel']);
 
 // ── Public cart endpoints (guest + auth) ──────────────────────────────────────
 // Cart is resolved via X-Cart-Token header for guests; auth users auto-adopt their cart.

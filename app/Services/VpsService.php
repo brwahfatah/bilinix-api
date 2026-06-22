@@ -138,6 +138,11 @@ class VpsService
     private function requireWhmcsClient(User $user): void
     {
         if (! $user->whmcs_client_id) {
+            if (config('services.whmcs.driver') === 'fake' || env('ENABLE_DEV_MOCKS', false)) {
+                $user->update(['whmcs_client_id' => 1]);
+                $user->refresh();
+                return;
+            }
             throw new RuntimeException('No WHMCS account is linked to this user.');
         }
     }

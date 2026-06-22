@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
 use App\Services\BillingService;
+use App\Services\PaymentService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ class BillingController extends Controller
 {
     use ApiResponse;
 
-    public function __construct(private readonly BillingService $billing) {}
+    public function __construct(
+        private readonly BillingService  $billing,
+        private readonly PaymentService  $payments,
+    ) {}
 
     /**
      * GET /api/billing/invoices
@@ -47,8 +51,16 @@ class BillingController extends Controller
     public function pay(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->billing->pay($request->user(), $id);
-            return $this->success($result, 'Redirect to complete payment');
+            $dto = $this->payments->createCheckout(
+                user:      $request->user(),
+                invoiceId: $id,
+                provider:  'stripe',
+            );
+
+            return $this->success(
+                ['checkout_url' => $dto->checkoutUrl],
+                'Redirect to Stripe checkout',
+            );
         } catch (RuntimeException $e) {
             return $this->error($e->getMessage(), null, 422);
         }

@@ -47,7 +47,7 @@ class PaymentController extends Controller
      * Called by the frontend after the payment provider redirects the user back.
      * Informational — the webhook is the authoritative confirmation.
      */
-    public function success(Request $request): JsonResponse
+    public function paymentSuccess(Request $request): JsonResponse
     {
         $request->validate([
             'session_id' => ['required', 'string'],
@@ -67,7 +67,7 @@ class PaymentController extends Controller
      *
      * Called by the frontend when the user cancels at the provider's checkout page.
      */
-    public function cancel(Request $request): JsonResponse
+    public function paymentCancel(Request $request): JsonResponse
     {
         $request->validate([
             'session_id' => ['required', 'string'],

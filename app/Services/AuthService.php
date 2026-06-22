@@ -3,37 +3,59 @@
 namespace App\Services;
 
 use App\DTO\UserDTO;
+use App\Integrations\WhmcsService;
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Sanctum\PersonalAccessToken;
+use RuntimeException;
 
 class AuthService
 {
+    public function __construct(private readonly WhmcsService $whmcs) {}
+
     /**
      * Register a new client account and issue a token.
      *
+     * In real WHMCS mode the operation is atomic: the local user row and the
+     * WHMCS client record are both created inside a single DB transaction.
+     * If WHMCS rejects the request or is unreachable the transaction is rolled
+     * back and no local user is persisted.
+     *
+     * In fake mode FakeWhmcsService::createClient() returns clientid = 1
+     * immediately, so behaviour is unchanged from the previous implementation.
+     *
      * @return array{ user: array, token: string }
+     * @throws RuntimeException  when WHMCS does not return a valid client ID
      */
     public function register(string $name, string $email, string $password): array
     {
-        $user = User::create([
-            'name'           => $name,
-            'email'          => $email,
-            'password'       => Hash::make($password),
-            'role'           => 'client',
-            'status'         => 'active',
-            // In dev-mock mode all fake WHMCS records belong to client ID 1;
-            // assign it automatically so VPS/billing/domain/ticket services work.
-            'whmcs_client_id' => env('ENABLE_DEV_MOCKS', false) ? 1 : null,
-        ]);
+        return DB::transaction(function () use ($name, $email, $password) {
+            $user = User::create([
+                'name'            => $name,
+                'email'           => $email,
+                'password'        => Hash::make($password),
+                'role'            => 'client',
+                'status'          => 'active',
+                'whmcs_client_id' => null,
+            ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+            $result   = $this->whmcs->createClient(['email' => $email, 'firstname' => $name]);
+            $clientId = (int) ($result['clientid'] ?? 0);
 
-        return [
-            'user'  => UserDTO::from($user)->toArray(),
-            'token' => $token,
-        ];
+            if ($clientId <= 0) {
+                throw new RuntimeException('WHMCS did not return a valid client ID.');
+            }
+
+            $user->update(['whmcs_client_id' => $clientId]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return [
+                'user'  => UserDTO::from($user->fresh())->toArray(),
+                'token' => $token,
+            ];
+        });
     }
 
     /**
@@ -78,16 +100,17 @@ class AuthService
     }
 
     /**
-     * Trigger WHMCS password reset email.
-     * Actual WHMCS call will be injected via WhmcsService when wired up.
+     * Trigger a WHMCS password-reset email for the given address.
+     *
+     * All exceptions from WHMCS are swallowed deliberately: the controller
+     * always returns a generic success message to prevent email-enumeration.
      */
     public function forgotPassword(string $email): void
     {
-        // Placeholder — will delegate to WhmcsService::resetPassword($email)
-        // in the next integration step.
-        $user = User::where('email', $email)->first();
-        if ($user) {
-            // TODO: dispatch PasswordResetEmail notification
+        try {
+            $this->whmcs->resetPassword($email);
+        } catch (\Throwable) {
+            // Intentional no-op — never reveal whether the address exists.
         }
     }
 

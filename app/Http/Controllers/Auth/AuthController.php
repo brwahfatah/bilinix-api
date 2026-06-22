@@ -14,6 +14,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 class AuthController extends Controller
 {
@@ -26,13 +27,16 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = $this->auth->register(
-            name:     $request->name,
-            email:    $request->email,
-            password: $request->password,
-        );
-
-        return $this->created($result, 'Account created successfully');
+        try {
+            $result = $this->auth->register(
+                name:     $request->name,
+                email:    $request->email,
+                password: $request->password,
+            );
+            return $this->created($result, 'Account created successfully');
+        } catch (RuntimeException $e) {
+            return $this->error($e->getMessage(), null, 503);
+        }
     }
 
     /**

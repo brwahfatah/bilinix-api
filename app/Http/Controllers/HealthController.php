@@ -41,7 +41,7 @@ class HealthController extends Controller
         try {
             $key = '_health_probe_' . getmypid();
             Cache::put($key, 1, 5);
-            $hit = Cache::get($key) === 1;
+            $hit = (string) Cache::get($key) === "1";
             Cache::forget($key);
             return $hit ? 'ok' : 'unavailable';
         } catch (\Throwable) {

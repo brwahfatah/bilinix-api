@@ -10,6 +10,7 @@ use App\Integrations\Payments\StripePaymentProvider;
 use App\Integrations\WhmcsService;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use App\Models\StripeEvent;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -117,7 +118,28 @@ class PaymentService
         $gateway = $this->resolveProvider($provider);
         $event   = $gateway->verifyWebhook($payload, $signature);
 
-        if (($event['type'] ?? '') === 'checkout.session.completed') {
+        $eventId   = $event['id'] ?? null;
+        $eventType = $event['type'] ?? 'unknown';
+
+        // Idempotency: skip events we have already processed
+        if ($eventId && StripeEvent::where('id', $eventId)->exists()) {
+            Log::info('Stripe webhook duplicate skipped', ['event_id' => $eventId, 'type' => $eventType]);
+            return ['received' => true];
+        }
+
+        // Persist event for audit trail and duplicate prevention
+        if ($eventId) {
+            StripeEvent::create([
+                'id'           => $eventId,
+                'type'         => $eventType,
+                'payload'      => $event,
+                'processed_at' => now(),
+            ]);
+        }
+
+        Log::info('Stripe webhook received', ['event_id' => $eventId, 'type' => $eventType]);
+
+        if ($eventType === 'checkout.session.completed') {
             $this->handleSessionCompleted($event['data']['object'] ?? []);
         }
 
@@ -181,6 +203,11 @@ class PaymentService
     private function requireWhmcsClient(User $user): void
     {
         if (! $user->whmcs_client_id) {
+            if (config('services.whmcs.driver') === 'fake' || env('ENABLE_DEV_MOCKS', false)) {
+                $user->update(['whmcs_client_id' => 1]);
+                $user->refresh();
+                return;
+            }
             throw new RuntimeException('No WHMCS account is linked to this user.');
         }
     }

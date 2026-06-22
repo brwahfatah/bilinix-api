@@ -35,10 +35,14 @@ class StripePaymentProvider implements PaymentProviderInterface
         string $currency,
         array  $metadata = [],
     ): array {
+        // Use & if the configured URL already contains a query string, otherwise ?
+        $successSep = str_contains($this->successUrl, '?') ? '&' : '?';
+        $cancelSep  = str_contains($this->cancelUrl,  '?') ? '&' : '?';
+
         $response = $this->http()->asForm()->post(self::API_BASE . '/checkout/sessions', [
-            'mode'                                                => 'payment',
-            'payment_method_types'                                => ['card'],
-            'line_items'                                          => [
+            'mode'                 => 'payment',
+            'payment_method_types' => ['card'],
+            'line_items'           => [
                 [
                     'quantity'   => 1,
                     'price_data' => [
@@ -50,8 +54,8 @@ class StripePaymentProvider implements PaymentProviderInterface
                     ],
                 ],
             ],
-            'success_url' => $this->successUrl . '?session_id={CHECKOUT_SESSION_ID}&provider=stripe',
-            'cancel_url'  => $this->cancelUrl  . '?session_id={CHECKOUT_SESSION_ID}&provider=stripe',
+            'success_url' => $this->successUrl . $successSep . 'session_id={CHECKOUT_SESSION_ID}&provider=stripe',
+            'cancel_url'  => $this->cancelUrl  . $cancelSep  . 'session_id={CHECKOUT_SESSION_ID}&provider=stripe',
             'metadata'    => array_merge(['invoice_id' => (string) $invoiceId], $metadata),
         ]);
 

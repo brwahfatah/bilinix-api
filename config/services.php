@@ -26,6 +26,7 @@ return [
     // ── Stripe payment gateway ────────────────────────────────────────────────
     'stripe' => [
         'key'             => env('STRIPE_SECRET_KEY'),        // sk_live_xxx / sk_test_xxx
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),   // pk_live_xxx / pk_test_xxx
         'webhook_secret'  => env('STRIPE_WEBHOOK_SECRET'),    // whsec_xxx (from Stripe dashboard)
         'currency'        => env('STRIPE_CURRENCY', 'USD'),   // default invoice currency
         // Frontend URLs Stripe redirects the user back to after checkout
@@ -35,6 +36,7 @@ return [
 
     // ── WHMCS integration ─────────────────────────────────────────────────────
     'whmcs' => [
+        'driver'        => env('WHMCS_DRIVER', 'real'),
         'url'           => env('WHMCS_API_URL'),           // https://billing.yourdomain.com
         'identifier'    => env('WHMCS_IDENTIFIER'),
         'secret'        => env('WHMCS_SECRET'),
